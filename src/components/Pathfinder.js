@@ -4,8 +4,8 @@ import axios from "axios";
 class Pathfinder extends Component {
   state = {
     pathFinderInput: "",
-    pathFinderResponse: {},
-    invalidInput:true
+    pathFinderResponse: "",
+    invalidInput: true
   };
 
   onSubmit = e => {
@@ -15,31 +15,43 @@ class Pathfinder extends Component {
     this.setState({ invalidInput: true });
   };
 
-  onChange = e =>{ 
-      this.setState({ [e.target.name]: e.target.value });
-      try{
-        JSON.parse("[" +  e.target.value + "]");
-        this.setState({ invalidInput: false });
-      }
-      catch{
-        this.setState({ invalidInput: true });
-      }
-  }
+  onChange = e => {
+    this.setState({ [e.target.name]: e.target.value });
+    try {
+      JSON.parse(e.target.value);
+      this.setState({ invalidInput: false });
+    } catch {
+      this.setState({ invalidInput: true });
+    }
+  };
 
   requestPathfinderService() {
     axios
       .post(
         "http://localhost:5001/api/PathFinder/FindPath",
-        JSON.parse("[" + this.state.pathFinderInput + "]"),
+        JSON.parse(this.state.pathFinderInput),
         {
           headers: {
             "Content-Type": "application/json"
           }
         }
       )
-      .then(res => this.setState({ pathFinderResponse: res.data }))
+      .then(res => {
+        if (res.status === 200) {
+          if (!!res.data.length){
+            this.setState({
+                pathFinderResponse: "Goal reachable. Optimal path: " + res.data
+              });
+          }
+          else{
+            this.setState({
+                pathFinderResponse: "Goal not reachable"
+              });
+          }
+        }
+      })
       .catch(err => {
-        this.setState({ pathFinderResponse: 'Request failed' });
+        this.setState({ pathFinderResponse: "Request failed" });
         console.log(err);
       });
   }
@@ -52,7 +64,7 @@ class Pathfinder extends Component {
             type="text"
             name="pathFinderInput"
             style={{ flex: "10", padding: "5px" }}
-            placeholder="Input array for path finder"
+            placeholder="Input array for path finder. e.g. [2,0,1]"
             value={this.state.pathFinderInput}
             onChange={this.onChange}
           />
@@ -64,7 +76,7 @@ class Pathfinder extends Component {
             disabled={this.state.invalidInput}
           />
         </form>
-        <p>{JSON.stringify(this.state.pathFinderResponse)}</p>
+        <p>{this.state.pathFinderResponse}</p>
       </React.Fragment>
     );
   }
